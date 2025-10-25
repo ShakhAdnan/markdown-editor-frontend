@@ -134,19 +134,19 @@ export default function SignupPage() {
         <div className="space-y-4">
           <div className="space-y-3 text-sm text-white/80">
             <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-400" />
+              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
               <span>Real-time collaboration with unlimited users</span>
             </div>
             <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-400" />
+              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
               <span>Version history and change tracking</span>
             </div>
             <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-400" />
+              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
               <span>AI-powered writing suggestions</span>
             </div>
             <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-400" />
+              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
               <span>Enterprise-grade security</span>
             </div>
           </div>
