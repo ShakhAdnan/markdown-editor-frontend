@@ -54,7 +54,6 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // Call backend API directly
       const response = await axiosInstance.post("/auth/login", {
         email: data.email,
         password: data.password,
@@ -62,16 +61,12 @@ export default function LoginPage() {
 
       if (response.data.success) {
         const { user, token } = response.data.data;
-
-        // Store auth state
         setAuth(user, token);
 
-        // Show success toast
         toast.success("Welcome back!", {
           description: `Logged in as ${user.email}`,
         });
 
-        // Redirect to dashboard
         router.push("/dashboard");
       } else {
         throw new Error(response.data.message || "Login failed");
@@ -79,7 +74,7 @@ export default function LoginPage() {
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message || "Login failed. Please try again.";
-      
+
       setError(errorMessage);
 
       toast.error("Login failed", {
@@ -92,28 +87,70 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Panel - Branding */}
+      {/* Left Panel - Hero Style with Better Spacing */}
       <div className="hidden w-1/2 bg-linear-to-br from-primary/95 via-primary/90 to-blue-600/95 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div>
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20 font-bold backdrop-blur">
+        <div className="flex flex-col gap-12">
+          {/* Logo - Now Clickable */}
+          <Link 
+            href="/" 
+            className="flex items-center gap-3 group transition-opacity hover:opacity-80 w-fit"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20 text-xl font-bold backdrop-blur transition-transform group-hover:scale-105">
               ME
             </div>
             <h1 className="text-2xl font-bold">Markdown Editor</h1>
+          </Link>
+
+          {/* Hero Text */}
+          <div className="space-y-8">
+            <h2 className="text-5xl leading-tight font-extrabold">
+              Write.
+              <br />
+              Collaborate.
+              <br />
+              Create.
+            </h2>
+            <p className="max-w-md text-xl leading-relaxed text-white/90">
+              The ultimate markdown editor for modern teams. Write together, see
+              changes instantly, and ship documentation faster than ever.
+            </p>
+
+            {/* Stats */}
+            <div className="flex gap-8 pt-4">
+              <div>
+                <div className="text-3xl font-bold">5,000+</div>
+                <div className="text-sm text-white/70">Active Teams</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">50k+</div>
+                <div className="text-sm text-white/70">Documents</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">99.9%</div>
+                <div className="text-sm text-white/70">Uptime</div>
+              </div>
+            </div>
           </div>
-          <p className="text-lg text-white/80">
-            Create, collaborate, and share beautiful markdown documents in real-time.
-          </p>
         </div>
 
+        {/* Spacer - Added for better visual separation */}
+        <div className="min-h-[60px] flex-1" />
+
+        {/* Footer */}
         <div className="space-y-4">
-          <div className="rounded-lg bg-white/10 p-4 backdrop-blur">
-            <p className="font-semibold">✨ New Features</p>
-            <ul className="mt-2 space-y-2 text-sm text-white/80">
-              <li>🚀 Real-time collaboration</li>
-              <li>🤖 AI-powered suggestions</li>
-              <li>📝 Version history tracking</li>
-              <li>🔒 End-to-end encryption</li>
+          <div className="rounded-lg border border-white/20 bg-white/10 p-4 backdrop-blur">
+            <p className="mb-2 font-semibold">✨ What's New</p>
+            <ul className="space-y-2 text-sm text-white/80">
+              <li className="flex items-center gap-2">
+                <span className="text-emerald-400">●</span> Real-time
+                collaboration
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-blue-400">●</span> AI-powered suggestions
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-purple-400">●</span> Version history
+              </li>
             </ul>
           </div>
           <p className="text-xs text-white/60">
@@ -166,14 +203,17 @@ export default function LoginPage() {
             {/* Divider */}
             <div className="relative">
               <Separator />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-sm text-muted-foreground">
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-sm text-muted-foreground">
                 Or continue with
               </span>
             </div>
 
             {/* Login Form */}
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 {/* Email Field */}
                 <FormField
                   control={form.control}
@@ -224,7 +264,7 @@ export default function LoginPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             disabled={isLoading}
                           >
                             {showPassword ? (

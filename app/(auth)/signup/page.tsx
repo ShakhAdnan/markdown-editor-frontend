@@ -31,15 +31,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Github,
-  Mail,
-  Check,
-  X,
-} from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Github, Mail, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SignupPage() {
@@ -117,44 +109,80 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Panel - Branding */}
-      <div className="hidden w-1/2 bg-linear-to-br from-blue-600/95 via-primary/90 to-primary/95 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div>
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20 font-bold backdrop-blur">
+      {/* Left Panel - Hero Style with Better Spacing */}
+      <div className="from-primary/95 via-primary/90 hidden w-1/2 bg-linear-to-br to-blue-600/95 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="flex flex-col gap-12">
+          {/* Logo - Now Clickable */}
+          <Link
+            href="/"
+            className="group flex w-fit items-center gap-3 transition-opacity hover:opacity-80"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/20 text-xl font-bold backdrop-blur transition-transform group-hover:scale-105">
               ME
             </div>
             <h1 className="text-2xl font-bold">Markdown Editor</h1>
+          </Link>
+
+          {/* Hero Text */}
+          <div className="space-y-8">
+            <h2 className="text-5xl leading-tight font-extrabold">
+              Write.
+              <br />
+              Collaborate.
+              <br />
+              Create.
+            </h2>
+            <p className="max-w-md text-xl leading-relaxed text-white/90">
+              The ultimate markdown editor for modern teams. Write together, see
+              changes instantly, and ship documentation faster than ever.
+            </p>
+
+            {/* Stats */}
+            <div className="flex gap-8 pt-4">
+              <div>
+                <div className="text-3xl font-bold">5,000+</div>
+                <div className="text-sm text-white/70">Active Teams</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">50k+</div>
+                <div className="text-sm text-white/70">Documents</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold">99.9%</div>
+                <div className="text-sm text-white/70">Uptime</div>
+              </div>
+            </div>
           </div>
-          <p className="text-lg text-white/80">
-            Join thousands of teams collaborating on beautiful markdown documents.
-          </p>
         </div>
 
+        {/* Spacer - Added for better visual separation */}
+        <div className="min-h-[60px] flex-1" />
+
+        {/* Footer */}
         <div className="space-y-4">
-          <div className="space-y-3 text-sm text-white/80">
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
-              <span>Real-time collaboration with unlimited users</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
-              <span>Version history and change tracking</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
-              <span>AI-powered writing suggestions</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Check className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
-              <span>Enterprise-grade security</span>
-            </div>
+          <div className="rounded-lg border border-white/20 bg-white/10 p-4 backdrop-blur">
+            <p className="mb-2 font-semibold">✨ What's New</p>
+            <ul className="space-y-2 text-sm text-white/80">
+              <li className="flex items-center gap-2">
+                <span className="text-emerald-400">●</span> Real-time
+                collaboration
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-blue-400">●</span> AI-powered suggestions
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-purple-400">●</span> Version history
+              </li>
+            </ul>
           </div>
+          <p className="text-xs text-white/60">
+            © 2025 Markdown Editor. All rights reserved.
+          </p>
         </div>
       </div>
 
       {/* Right Panel - Signup Form */}
-      <div className="flex w-full flex-col items-center justify-center overflow-y-auto bg-background px-4 py-8 lg:w-1/2">
+      <div className="bg-background flex w-full flex-col items-center justify-center overflow-y-auto px-4 py-8 lg:w-1/2">
         <Card className="w-full max-w-md border-0 shadow-lg">
           <CardHeader className="space-y-2">
             <CardTitle className="text-3xl font-bold">Create Account</CardTitle>
@@ -197,14 +225,17 @@ export default function SignupPage() {
             {/* Divider */}
             <div className="relative">
               <Separator />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-sm text-muted-foreground">
+              <span className="bg-background text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-sm">
                 Or signup with email
               </span>
             </div>
 
             {/* Signup Form */}
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 {/* Name Field */}
                 <FormField
                   control={form.control}
@@ -269,7 +300,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                             disabled={isLoading}
                           >
                             {showPassword ? (
@@ -284,12 +315,12 @@ export default function SignupPage() {
 
                       {/* Password Requirements Checklist */}
                       {password && (
-                        <div className="mt-3 space-y-2 rounded-lg bg-muted p-3 text-xs">
+                        <div className="bg-muted mt-3 space-y-2 rounded-lg p-3 text-xs">
                           <div className="flex items-center gap-2">
                             {passwordChecks.hasLength ? (
                               <Check className="h-4 w-4 text-emerald-500" />
                             ) : (
-                              <X className="h-4 w-4 text-muted-foreground" />
+                              <X className="text-muted-foreground h-4 w-4" />
                             )}
                             <span
                               className={
@@ -305,7 +336,7 @@ export default function SignupPage() {
                             {passwordChecks.hasUpperCase ? (
                               <Check className="h-4 w-4 text-emerald-500" />
                             ) : (
-                              <X className="h-4 w-4 text-muted-foreground" />
+                              <X className="text-muted-foreground h-4 w-4" />
                             )}
                             <span
                               className={
@@ -321,7 +352,7 @@ export default function SignupPage() {
                             {passwordChecks.hasLowerCase ? (
                               <Check className="h-4 w-4 text-emerald-500" />
                             ) : (
-                              <X className="h-4 w-4 text-muted-foreground" />
+                              <X className="text-muted-foreground h-4 w-4" />
                             )}
                             <span
                               className={
@@ -337,7 +368,7 @@ export default function SignupPage() {
                             {passwordChecks.hasNumber ? (
                               <Check className="h-4 w-4 text-emerald-500" />
                             ) : (
-                              <X className="h-4 w-4 text-muted-foreground" />
+                              <X className="text-muted-foreground h-4 w-4" />
                             )}
                             <span
                               className={
@@ -353,7 +384,7 @@ export default function SignupPage() {
                             {passwordChecks.hasSpecial ? (
                               <Check className="h-4 w-4 text-emerald-500" />
                             ) : (
-                              <X className="h-4 w-4 text-muted-foreground" />
+                              <X className="text-muted-foreground h-4 w-4" />
                             )}
                             <span
                               className={
@@ -393,7 +424,7 @@ export default function SignupPage() {
                             onClick={() =>
                               setShowConfirmPassword(!showConfirmPassword)
                             }
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                             disabled={isLoading}
                           >
                             {showConfirmPassword ? (
@@ -428,14 +459,14 @@ export default function SignupPage() {
                           I agree to the{" "}
                           <Link
                             href="/terms"
-                            className="underline hover:text-foreground"
+                            className="hover:text-foreground underline"
                           >
                             Terms of Service
                           </Link>{" "}
                           and{" "}
                           <Link
                             href="/privacy"
-                            className="underline hover:text-foreground"
+                            className="hover:text-foreground underline"
                           >
                             Privacy Policy
                           </Link>
@@ -466,11 +497,11 @@ export default function SignupPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col space-y-4 border-t pt-6">
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-center text-sm">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-semibold text-primary hover:underline"
+                className="text-primary font-semibold hover:underline"
               >
                 Sign in
               </Link>
