@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { DocumentStats } from "@/components/editor/DocumentStats";
+import {
+  EditorToolbar,
+  type ToolbarAction,
+} from "@/components/editor/EditorToolbar";
+import { applyMarkdownAction } from "@/lib/editor/markdownActions";
 import { documentsApi } from "@/lib/api/documents";
 import {
   DropdownMenu,
@@ -29,29 +34,59 @@ import {
   Copy,
   FileText,
   File,
+  FileType,
 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
 import type { Document } from "@/types/document";
+import { exportApi } from "@/lib/api/export";
+
+type HistoryEntry = {
+  value: string;
+  selectionStart: number;
+  selectionEnd: number;
+};
 
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
   const [document, setDocument] = useState<Document | null>(null);
   const [content, setContent] = useState("");
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showPreview, setShowPreview] = useState(true);
 
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
   useEffect(() => {
     if (params.id) {
       fetchDocument(params.id as string);
     }
   }, [params.id]);
+
+  // Init history after load
+  useEffect(() => {
+    if (!isLoading && document) {
+      const el = textareaRef.current;
+      const selStart = el?.selectionStart ?? 0;
+      const selEnd = el?.selectionEnd ?? 0;
+      setHistory([
+        {
+          value: document.content,
+          selectionStart: selStart,
+          selectionEnd: selEnd,
+        },
+      ]);
+      setRedoStack([]);
+    }
+  }, [isLoading, document]);
 
   // Auto-save every 3 seconds if there are changes
   useEffect(() => {
@@ -76,6 +111,30 @@ export default function EditorPage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+
+      if (mod && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [content, history, redoStack]);
+
+  const pushHistory = (value: string, selStart: number, selEnd: number) => {
+    setHistory((prev) => [
+      ...prev,
+      { value, selectionStart: selStart, selectionEnd: selEnd },
+    ]);
+    setRedoStack([]); // clear redo on new edit
+  };
 
   const fetchDocument = async (id: string) => {
     setIsLoading(true);
@@ -110,9 +169,112 @@ export default function EditorPage() {
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
+    const el = e.target;
+    pushHistory(content, el.selectionStart, el.selectionEnd);
+    setContent(el.value);
     setHasUnsavedChanges(true);
   };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const currentEl = textareaRef.current;
+    const last = history[history.length - 1];
+
+    setRedoStack((r) => [
+      ...r,
+      {
+        value: content,
+        selectionStart: currentEl?.selectionStart ?? content.length,
+        selectionEnd: currentEl?.selectionEnd ?? content.length,
+      },
+    ]);
+
+    setHistory((h) => h.slice(0, -1));
+    setContent(last.value);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.selectionStart = last.selectionStart;
+        textareaRef.current.selectionEnd = last.selectionEnd;
+      }
+    });
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const currentEl = textareaRef.current;
+    const next = redoStack[redoStack.length - 1];
+
+    setHistory((h) => [
+      ...h,
+      {
+        value: content,
+        selectionStart: currentEl?.selectionStart ?? content.length,
+        selectionEnd: currentEl?.selectionEnd ?? content.length,
+      },
+    ]);
+
+    setRedoStack((r) => r.slice(0, -1));
+    setContent(next.value);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.selectionStart = next.selectionStart;
+        textareaRef.current.selectionEnd = next.selectionEnd;
+      }
+    });
+  };
+
+  const handleToolbarAction = (action: ToolbarAction) => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    if (action === "undo") return handleUndo();
+    if (action === "redo") return handleRedo();
+
+    // Save current state for undo
+    pushHistory(content, el.selectionStart, el.selectionEnd);
+
+    // Apply action
+    const result = applyMarkdownAction(action, el);
+    setContent(result.value);
+    setHasUnsavedChanges(true);
+
+    // Restore focus and selection
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return;
+      textareaRef.current.focus();
+      textareaRef.current.selectionStart = result.selectionStart;
+      textareaRef.current.selectionEnd = result.selectionEnd;
+    });
+  };
+
+  const handleExportPDFServer = async () => {
+  if (!document) return;
+  try {
+    const blob = await exportApi.pdf(document.title, content);
+
+    // Detect if the blob is actually JSON error
+    if (blob.type && blob.type.includes("application/json")) {
+      const text = await blob.text();
+      console.error("PDF error response:", text);
+      toast.error("Failed to export PDF");
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = window.document.createElement("a");
+    a.href = url;
+    a.download = `${document.title}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("PDF downloaded");
+  } catch (e) {
+    console.error(e);
+    toast.error("Failed to export PDF");
+  }
+};
+
 
   const handleCopyToClipboard = async () => {
     try {
@@ -155,24 +317,9 @@ export default function EditorPage() {
   <meta charset="UTF-8">
   <title>${document.title}</title>
   <style>
-    body { 
-      font-family: system-ui, -apple-system, sans-serif; 
-      max-width: 800px; 
-      margin: 40px auto; 
-      padding: 0 20px; 
-      line-height: 1.6; 
-    }
-    pre { 
-      background: #f5f5f5; 
-      padding: 10px; 
-      border-radius: 4px; 
-      overflow-x: auto; 
-    }
-    code { 
-      background: #f5f5f5; 
-      padding: 2px 4px; 
-      border-radius: 2px; 
-    }
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    code { background: #f5f5f5; padding: 2px 4px; border-radius: 2px; }
   </style>
 </head>
 <body>
@@ -196,8 +343,8 @@ export default function EditorPage() {
         <DashboardHeader />
         <main className="flex-1 p-6">
           <div className="mx-auto max-w-7xl">
-            <Skeleton className="h-8 w-32 mb-4" />
-            <Skeleton className="h-12 w-2/3 mb-6" />
+            <Skeleton className="mb-4 h-8 w-32" />
+            <Skeleton className="mb-6 h-12 w-2/3" />
             <Skeleton className="h-96 w-full" />
           </div>
         </main>
@@ -209,8 +356,8 @@ export default function EditorPage() {
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
 
-      {/* Editor Toolbar */}
-      <div className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
+      {/* Top Toolbar: title, preview, export, save */}
+      <div className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-10 border-b backdrop-blur">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Button
@@ -227,7 +374,7 @@ export default function EditorPage() {
 
           <div className="flex items-center gap-2">
             {/* Save Status */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
               {isSaving ? (
                 <>
                   <Clock className="h-3 w-3 animate-spin" />
@@ -248,7 +395,7 @@ export default function EditorPage() {
 
             <Separator orientation="vertical" className="h-6" />
 
-            {/* Actions */}
+            {/* Preview Toggle */}
             <Button
               variant="outline"
               size="sm"
@@ -294,6 +441,10 @@ export default function EditorPage() {
                   <File className="mr-2 h-4 w-4" />
                   Download as HTML
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDFServer}>
+                  <FileType className="mr-2 h-4 w-4" />
+                  Download as PDF
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -307,6 +458,9 @@ export default function EditorPage() {
             </Button>
           </div>
         </div>
+
+        {/* Formatting Toolbar */}
+        <EditorToolbar onAction={handleToolbarAction} disabled={isLoading} />
       </div>
 
       {/* Editor Area with Stats Sidebar */}
@@ -319,10 +473,11 @@ export default function EditorPage() {
         >
           {/* Editor Pane */}
           <div className="flex flex-col border-r">
-            <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
+            <div className="bg-muted/50 flex items-center justify-between border-b px-4 py-2">
               <Badge variant="secondary">Markdown</Badge>
             </div>
             <Textarea
+              ref={textareaRef}
               value={content}
               onChange={handleContentChange}
               placeholder="Start writing your markdown..."
@@ -333,12 +488,15 @@ export default function EditorPage() {
           {/* Preview Pane */}
           {showPreview && (
             <div className="flex flex-col border-r">
-              <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
+              <div className="bg-muted/50 flex items-center justify-between border-b px-4 py-2">
                 <Badge variant="secondary">Preview</Badge>
               </div>
               <div className="flex-1 overflow-y-auto p-6">
                 <article className="prose prose-neutral dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                  >
                     {content || "*No content to preview*"}
                   </ReactMarkdown>
                 </article>
@@ -347,8 +505,8 @@ export default function EditorPage() {
           )}
 
           {/* Stats Sidebar */}
-          <div className="flex flex-col bg-muted/30">
-            <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
+          <div className="bg-muted/30 flex flex-col">
+            <div className="bg-muted/50 flex items-center justify-between border-b px-4 py-2">
               <Badge variant="secondary">Stats</Badge>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
